@@ -1,0 +1,10 @@
+runtime: nodejs12
+handlers:
+
+- url: /(.*\..+)$
+  static_files: web-build/\1
+  upload: web-build/(.*\..+)$
+
+- url: /.*
+  static_files: web-build/index.html
+  upload: web-build/index.html

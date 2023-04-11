@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "project1",
+    "slug": "project1",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ms3102sp.project1"
+    },
+    "android": {
+      "package": "com.ms3102sp.project1",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
+    },
+    "web": {
+      "favicon": "./assets/ChirpLOGO.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "e7c2aa17-9649-4481-a3b6-e9d6380d47fe"
+      }
+    },
+    "owner": "ms3102sp"
+  }
+}
