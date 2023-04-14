@@ -42,7 +42,9 @@ export default function App() {
   const postUser = global.postUser
   const postSubject = global.postSubject
   const postBody = global.postBody
+  
 
+  /*
   const useFunctionEvery30Seconds = () => {
     const [count, setCount] = useState(0);
   
@@ -76,7 +78,7 @@ export default function App() {
     };
   }, [every30Seconds]);
  
-  
+  */
 async function getData(charstr)
 {
 
@@ -136,6 +138,64 @@ const insertPost=()=>
     )
   console.log("Post submitted to Database.")
 }
+
+function insertData(username, password) {
+  var Username=(username);
+  var Password=(password);
+
+  var InsertAPIURL="http://10.0.2.2:80/api/signup.php";
+  var headers={
+        'Accept':'application/json',
+        'Content-Type':'application/json'
+  };
+
+  var Data={
+    Username:Username,
+    Password:Password,
+  };
+
+  fetch(InsertAPIURL,
+    {
+        method: 'POST',
+        headers:headers,
+        body: JSON.stringify(Data)
+    }  
+    )
+  console.log("User info submitted to Database.")
+}
+
+/*
+function verifyData(username, password) {
+
+  var InsertAPIURL="http://10.0.2.2:80/api/verifylogin.php";
+  var headers = {
+    'Accept':'application/json',
+    'Content-Type':'application/json'
+  };
+
+  var Data = {
+    Username: username,
+    Password: password,
+  };
+
+  fetch(InsertAPIURL,
+    {
+      method: 'POST',
+      headers:headers,
+      body: JSON.stringify(Data)
+    }
+    )
+  .then((response) => response.text())
+  .then((responseJson) => {
+    if (responseJson === 'success'){
+      navigation.navigate("Home")
+    } else {
+      Alert.alert("Incorrect Username or Password. Please try again.")
+    }
+  })
+}
+*/
+
 
 const insertClick=()=>
   {
@@ -213,6 +273,8 @@ function MyStack () {
             <Stack.Screen name="Homer" component={HomerScreen} />
             <Stack.Screen name="Roger" component={RogerScreen} />
             <Stack.Screen name="Stewie" component={StewieScreen} />
+            <Stack.Screen name="Signup" component={SignupScreen} />
+            <Stack.Screen name="Password Recovery" component={ForgotScreen} />
           </Stack.Navigator>
        </NavigationContainer>
       )}
@@ -288,18 +350,13 @@ function MyStack () {
     setUser (await AsyncStorage.getItem('@userData'))
   }
 
-  //Navigable Screens
+  /*Navigable Screens
   const LoginScreen = () => {
-    if (user) {
-      return(
-        Root()
-      )
-    }
     return (
-      Root() //this is normally Login(), but switched to Root to ignore logging in every time during testing
+      Login() //this is normally Login(), but switched to Root to ignore logging in every time during testing
     );
   };
-
+  */
   
 
   const HomeScreen = ({navigation}) => {
@@ -408,6 +465,45 @@ function MyStack () {
     );
   };
 
+  const SignupScreen = ({navigation}) => {
+
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
+
+    return (
+      <>
+      <View style={styles.signup}>
+        <Image source={require("./assets/ChirpLOGO.png")} style={styles.logo}/>
+        <View style={styles.inputView}>
+          <TextInput
+            style={styles.TextInput}
+            placeholder="Username"
+            placeholderTextColor="#000"
+            onChangeText={(username) => setUsername(username)} />
+        </View>
+        <View style={styles.inputView}>
+          <TextInput
+            style={styles.TextInput}
+            placeholder="Password"
+            placeholderTextColor="#000"
+            onChangeText={(password) => setPassword(password)} />
+      </View>
+      <TouchableOpacity onPress={() => insertData(username, password)}><Text>Sign up</Text></TouchableOpacity>
+      </View>
+    </>
+    )
+  }
+
+  const ForgotScreen = ({navigation}) => {
+    return(
+      <>
+        <View style={styles.container}>
+          <Text>This is the forgot password screen</Text>
+        </View>
+      </>
+    )
+  }
+
   const FeedScreen = ({navigation}) => {
 
     const Col = ({ numRows, children }) => {
@@ -420,6 +516,7 @@ function MyStack () {
       <View style={styles.row}>{children}</View>
     )
 
+  
     
     return (
       <View style={styles.app}>
@@ -499,7 +596,7 @@ function MyStack () {
           tabBarInactiveTintColor: 'gray',
           
         })}>
-          <Tab.Screen name="Post" component={HomeScreen} listeners={() => ({
+          <Tab.Screen name="Post" component={HomeScreen}  listeners={() => ({
     tabPress: e => {
       
           incrementClips(); setUser(true)
@@ -581,7 +678,15 @@ function MyStack () {
       backgroundColor: '#fff',
       alignItems: 'center',
       justifyContent: 'center',
-    }, 
+    },
+    
+    signup: {
+      flex: 1,
+      backgroundColor: '#fff',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: "60%", 
+    },
     
     googleStuff: {
       backgroundColor: '#fff',
@@ -727,126 +832,93 @@ function MyStack () {
 
   //  *****LOGIN CODE*****
 
+  
+  const LoginScreen = ({navigation}) => {
 
-  function Login() {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    
-    <div class="g-signin2" data-onsuccess="onSignIn"></div>
+      const [username, setUsername] = useState("");
+      const [password, setPassword] = useState("");
 
-    function onSignIn(googleUser) {
-      var profile = googleUser.getBasicProfile();
-      console.log('ID: ' + profile.getID());
-      console.log('Name: ' + profile.getName());
-      console.log('Image URL: ' + profile.getImageUrl());
-      console.log('Email: ' + profile.getEmail());
+      function verifyData(username, password) {
+
+        var InsertAPIURL="http://10.0.2.2:80/api/verifylogin.php";
+        var headers = {
+          'Accept':'application/json',
+          'Content-Type':'application/json'
+        };
       
-    }
-
-    const [accessToken, setAccessToken] = React.useState(null);
-    const [user, setUser] = React.useState(null);
-    const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-      clientId: "449320965215-e26lq5lqh2a0l2jefuedb7vjcbm1d7g3.apps.googleusercontent.com"
-
-    });
-
-    React.useEffect(() => {
-      if(response?.type === "success"){
-        setAccessToken(response.params);
-        accessToken && fetchUserInfo();
+        var Data = {
+          Username: username,
+          Password: password,
+        };
+      
+        fetch(InsertAPIURL,
+          {
+            method: 'POST',
+            headers:headers,
+            body: JSON.stringify(Data)
+          }
+          )
+        .then((response) => response.text())
+        .then((response) => {
+          if (response === 'successful login.'){
+            navigation.navigate("Home")
+            console.log("Login Successful")
+          } else {
+            Alert.alert("Incorrect Username or Password. Please try again.")
+            console.log("Login Failed")
+          }
+        })
       }
+      
+      return (
+        <><View style={styles.container}>
 
-    }, [response, accessToken])
+          <StatusBar style="auto" />
 
-
-    async function fetchUserInfo(){
-      let response = await fetch("http://www.googleapis.com/userinfo/v2/me", {
-        headers: { Authorization: `Bearer ${accessToken}` }
-        
-      });
-      const userInfo = await response.json();
-      setUser(accessToken)
-    }
-
-    const showUserData = () => {
-      fetchUserInfo()
-      if (userInfo) {
-        return(
-          <View style ={styles.userInfo}>
-            <Image source={{ uri: userInfo.picture }} style={styles.profilePic} />
-            <Text>{userInfo.email}</Text>
+          <Image source={require("./assets/ChirpLOGO.png")} style={styles.logo}/>
+          <View style={styles.inputView}>
+            <TextInput
+              style={styles.TextInput}
+              placeholder="Username"
+              placeholderTextColor="#000"
+              onChangeText={(username) => setUsername(username)} />
           </View>
 
-        )
-      }
-    }
 
-    setData()
+          <View style={styles.inputView}>
+            <TextInput
+              style={styles.TextInput}
+              placeholder="Password"
+              placeholderTextColor="#000"
+              onChangeText={(password) => setPassword(password)} />
+          </View>
 
-    if (user) {
-      return Root()
-    }
+          
+          <TouchableOpacity onPress={() => {navigation.navigate('Password Recovery')}}>
+            <Text style={styles.forgotButton}>Forgot Password?</Text>
+          </TouchableOpacity>
 
-    return (
-      <><View style={styles.container}>
+          <TouchableOpacity onPress={() => {navigation.navigate('Signup')}}>
+            <Text style={styles.forgotButton}>Sign up here!</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity onPress={() => verifyData(username, password)}>
+            <Text style={styles.loginButton}>Login</Text> 
+          </TouchableOpacity>
 
-        <StatusBar style="auto" />
 
-        <Image source={require("./assets/ChirpLOGO.png")} style={styles.logo}/>
-        <View style={styles.inputView}>
-          <TextInput
-            style={styles.TextInput}
-            placeholder="Email"
-            placeholderTextColor="#000"
-            onChangeText={(email) => setEmail(email)} />
         </View>
-
-
-        <View style={styles.inputView}>
-          <TextInput
-            style={styles.TextInput}
-            placeholder="Password"
-            placeholderTextColor="#000"
-            onChangeText={(password) => setPassword(password)} />
-        </View>
-
-
-        <TouchableOpacity>
-          <Text style={styles.forgotButton}>Forgot Password?</Text>
-        </TouchableOpacity>
-
 
         
-        <TouchableOpacity>
-          <Text style={styles.loginButton}>Login</Text> 
-        </TouchableOpacity>
-
-
-      </View>
-
-      <View style={styles.googleStuff}>
-          {user && <Text>Welcome!</Text>}
-          {user === null &&
-            <>
-            <Text style={{fontSize: 20, fontWeight: 'bold', marginBottom: 0, backgroundColor: "#fff"}}>Or, log in with Google.</Text>
-              <TouchableOpacity
-                disabled={!request}
-                onPress={() => {
-                  promptAsync();
-                } }
-              ><Image source={require("./assets/btn.png")} style={{width: 72, height: 72}}/>
-              </TouchableOpacity>
-            </>}
-        </View>
-      </>
-    );
+        </>
+      );
+      
     
   }
-  
 
   return (
   MyStack()
  )
 }
 
-
+//, verifyData()
