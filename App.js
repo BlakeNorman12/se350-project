@@ -1,84 +1,145 @@
 import * as React from 'react';
-import {NavigationContainer, useNavigation} from '@react-navigation/native';
+import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import {
 
-  AppRegistry,
-  AppState,
   StyleSheet,
   Text,
   View,
   Alert,
   Button,
-  useWindowDimensions,
   TouchableOpacity,
   TextInput,
   Image,
-  Touchable,
-  
-
-
+  FlatList,
 
 } from 'react-native';
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
-import { useState } from "react";
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import * as Google from 'expo-auth-session/providers/google';
+import { useState, useEffect } from "react";
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BarChart } from 'react-native-chart-kit';
 
 
 export default function App() {
   const Stack = createNativeStackNavigator();
   //Button Counters
-  const [surveyCounter, setSurveyCounter] = React.useState(0);
-  const [feedCounter, setFeedCounter] = React.useState(0);
-  const [postCounter, setPostCounter] = React.useState(0);
-  const [profileCounter, setProfileCounter] = React.useState(0);
+  const [surveyCounter, setSurveyCounter] = useState(0);
+  const [feedCounter, setFeedCounter] = useState(0);
+  const [postCounter, setPostCounter] = useState(0);
+  const [profileCounter, setProfileCounter] = useState(0);
   
-  const [user, setUser] = React.useState(null);
+  const [graphSurvey, setGraphSurvey] = useState(0)
+  const [graphFeed, setGraphFeed] = useState(0) 
+  const [graphPost, setGraphPost] = useState(0)
+  const [graphProfile, setGraphProfile] = useState(0)
 
+  const [user, setUser] = React.useState(null);
+  const [posts, setPosts] = useState('')
+  const [allPosts, setAllPosts] = useState('')
+  
   const postUser = global.postUser
   const postSubject = global.postSubject
   const postBody = global.postBody
   
-
-  /*
-  const useFunctionEvery30Seconds = () => {
-    const [count, setCount] = useState(0);
-  
-    useEffect(() => {
-      const intervalId = setInterval(() => {
-        setCount(count => count + 1);
-      }, 10000);
-  
-      return () => {
-        clearInterval(intervalId);
-      };
-    }, []);
-  
-    const every30Seconds = () => {
-      console.log(count)
-      insertClick()
-    };
-  
-    return every30Seconds;
+  const data = {
+    labels: ["Survey", "Feed", "Post", "Profile"],
+    datasets: [
+      {
+        data: [graphSurvey["graphSurvey"],
+               graphFeed["graphFeed"],
+               graphPost["graphPost"],
+               graphProfile["graphProfile"]]
+      }
+    ]
   };
 
-  const every30Seconds = useFunctionEvery30Seconds();
+  const chartConfig = {
+    backgroundGradientFrom: "#db2c49",
+    backgroundGradientFromOpacity: 0.5,
+    backgroundGradientTo: "#db2c49",
+    backgroundGradientToOpacity: 1,
+    
+    color: (opacity = 1) => `rgba(26, 255, 146, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(0 ,0, 0, ${opacity})`,
+    strokeWidth: 2,
+    barPercentage: .5,
+    useShadowColorFromDataset: false, 
+    fillShadowGradient: '#690314', 
+    fillShadowGradientOpacity: 1,
+    showBarTops: false,
+    fromZero: true
+  };
 
+  const listViewItemSeparator = () => {
+    return (
+      <View
+        style={{
+          height: 1,
+          width: '100%',
+          backgroundColor: '#807a7a',
+          padding: 5,
+        }}
+      />
+    );
+  };
+
+
+  const reversedData = [...allPosts].reverse();
+
+  const renderItem = ({item}) => {
+    return(
+      <View style={styles.listItem}>
+        <Text style={styles.postUser}>{item.Username}</Text>
+        <Text style={styles.postSubject}>{item.Subject}</Text>
+        <Text style={styles.postBody}>{item.Body}</Text>
+      </View>
+    )
+  }
+
+  function GetGraphData() {
+    console.log("Working")
+    var SearchAPIURL="http://10.0.2.2:80/api/chirpgraph.php";
+    var headers={
+      'Accept':'application/json',
+      'Content-Type':'application/json'
+    };
+
+    fetch(SearchAPIURL, 
+    {
+      method: 'POST',
+      headers: headers
+    }
+    )
+    .then((response) => response.json())
+    .then((data) => {
+      console.log(data)
+      setGraphSurvey({graphSurvey:data[0].Survey})
+      setGraphFeed({graphFeed:data[0].Feed})
+      setGraphPost({graphPost:data[0].Post})
+      setGraphProfile({graphProfile:data[0].Profile})
+    })
+    
+  }
+
+  //Automatically update click values every 30 seconds
   useEffect(() => {
     const intervalId = setInterval(() => {
-      every30Seconds();
-    }, 5000);
+      callFunction();
+    }, 30000);
 
     return () => {
       clearInterval(intervalId);
-    };
-  }, [every30Seconds]);
+    }
+  }, []);
+
+  const callFunction = () => {
+    insertClick();
+
+  }
  
-  */
+//Retrieves data based on images from our Funny screen
 async function getData(charstr)
 {
 
@@ -111,9 +172,10 @@ async function getData(charstr)
   
 };
 
+//Allows users to create posts and upload them to a database
 const insertPost=()=> 
 {
-  var PostUser=global.postUser;
+  var PostUser=global.username;
   var PostSubject=global.postSubject;
   var PostBody=global.postBody;
 
@@ -139,6 +201,48 @@ const insertPost=()=>
   console.log("Post submitted to Database.")
 }
 
+//Retrieves ALL posts from the database and renders them onto the 
+//"Feed" screen using a FlatList
+function getAllPosts() {
+  var SearchAPIURL = "http://10.0.2.2:80/api/allposts.php"
+
+  fetch(SearchAPIURL, 
+    {
+      method: 'POST',
+    }
+  )
+  .then((response) => response.json())
+  .then(allposts => {
+    setAllPosts(allposts);
+    console.log(allPosts)
+
+  })
+}
+
+//Retrieves the current user's posts and uploads them on the "Profile"
+//Screen
+function getUserPosts(username) {
+  var SearchAPIURL="http://10.0.2.2:80/api/userposts.php"
+  var Username = username
+
+  var Data = {
+    Username: Username,
+  }
+
+  fetch(SearchAPIURL,
+    {
+      method: 'POST',
+      body: JSON.stringify(Data)
+    }
+  )
+  .then((response) => response.json())
+  .then(posts => {
+    setPosts(posts);
+    console.log({posts})
+  })
+}
+
+//Inserts username and password upon user registration
 function insertData(username, password) {
   var Username=(username);
   var Password=(password);
@@ -164,39 +268,9 @@ function insertData(username, password) {
   console.log("User info submitted to Database.")
 }
 
-/*
-function verifyData(username, password) {
-
-  var InsertAPIURL="http://10.0.2.2:80/api/verifylogin.php";
-  var headers = {
-    'Accept':'application/json',
-    'Content-Type':'application/json'
-  };
-
-  var Data = {
-    Username: username,
-    Password: password,
-  };
-
-  fetch(InsertAPIURL,
-    {
-      method: 'POST',
-      headers:headers,
-      body: JSON.stringify(Data)
-    }
-    )
-  .then((response) => response.text())
-  .then((responseJson) => {
-    if (responseJson === 'success'){
-      navigation.navigate("Home")
-    } else {
-      Alert.alert("Incorrect Username or Password. Please try again.")
-    }
-  })
-}
-*/
-
-
+//Updates the values in our database by adding the current click values to whats already in the database. 
+//Sets all click values to 0 once they are submitted so they don't get counted again on the 
+//Next submission
 const insertClick=()=>
   {
     var SurveyClicks=surveyCounter;
@@ -224,101 +298,46 @@ const insertClick=()=>
         body: JSON.stringify(Data)
       }  
       )
-    
+      
+      setProfileCounter(0);
+      setFeedCounter(0);
+      setSurveyCounter(0);
+      setPostCounter(0);
       console.log("Click values sent to Database.")
-      /*
-      .then((response)=>response.json())
-      .then((response)=>
-      {
-        alert(response[0].Message);
-      })
-      .catch((error)=>
-      {
-        alert("prob"+error);
-      })
-      */
-      
-      
     }
 
-    /*const handleAppStateChange = (appState) => {
-      if (appState === 'background') {
-        insertClick();
-      } else if (appState === 'inactive') {
-        console.log('App is inactive!');
-      }
-    };
-  
-    useEffect(() => {
-      AppState.addEventListener('change', handleAppStateChange);
-  
-      return () => {
-        AppState.removeEventListener('change', handleAppStateChange);
-      };
-    }, []);*/
-  
+//Construction of each of our screens
 function MyStack () {
-  
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
 
     return (
         <NavigationContainer>
-          <Stack.Navigator>
+          <Stack.Navigator screenOptions={{
+    headerShown: true
+  }}>
             <Stack.Screen name="Login" component={LoginScreen} options={{
               headerShown: false}}/>
-            <Stack.Screen name="Home" component={Root} />
-            <Stack.Screen name="Survey" component={SurveyScreen} />
-            <Stack.Screen name="Peter" component={PeterScreen} />
-            <Stack.Screen name="Homer" component={HomerScreen} />
-            <Stack.Screen name="Roger" component={RogerScreen} />
-            <Stack.Screen name="Stewie" component={StewieScreen} />
+            <Stack.Screen name="Log Out" component={Root}/>
+            <Stack.Screen name="Survey" component={SurveyScreen}/>
+            <Stack.Screen name="Peter" component={PeterScreen} options={{headerStyle: {
+              backgroundColor: "#373b40"
+           } }}/>
+            <Stack.Screen name="Homer" component={HomerScreen} options={{headerStyle: {
+              backgroundColor: "#373b40"
+           } }}/>
+            <Stack.Screen name="Roger" component={RogerScreen} options={{headerStyle: {
+              backgroundColor: "#373b40"
+           } }}/>
+            <Stack.Screen name="Stewie" component={StewieScreen} options={{headerStyle: {
+              backgroundColor: "#373b40"
+           } }}/>
             <Stack.Screen name="Signup" component={SignupScreen} />
-            <Stack.Screen name="Password Recovery" component={ForgotScreen} />
+            <Stack.Screen name="Password Recovery" component={ForgotScreen} options={{headerStyle: {
+              backgroundColor: "#373b40"
+           } }}/>
+            <Stack.Screen name="Graph Data" component={GraphScreen}/>
           </Stack.Navigator>
        </NavigationContainer>
       )}
-
-    
-
-  const getPost = async () => {
-
-    const values = await AsyncStorage.multiGet(['@surveyCount', '@greeting', '@postCount', '@feedCount', '@profileCount']);
-
-    values.forEach(value => {
-      if (value[0] === '@surveyCount') {
-        const surveyCount = parseInt(value[1]);
-        setSurveyCounter(isNaN(surveyCount) ? 0 : surveyCount);
-      } else if (value[1] === '@greeting') {
-        setGreeting(JSON.parse(value[1]));
-      } else if (value[2] === '@feedCount') {
-        const postCount = parseInt(value[1]);
-        setPostCounter(isNaN(postCount) ? 0 : postCount);
-      } else if (value[3] === '@feedCount') {
-        const feedCount = parseInt(value[1]);
-        setFeedCounter(isNaN(feedCount) ? 0 : feedCount);
-      } else if (value[4] === '@profileCount') {
-        const profileCount = parseInt(value[1]);
-        setProfileCounter(isNaN(profileCount) ? 0 : profileCount);
-  }});
-
-    console.log(values)
-    return(
-      values
-    )
-  };
-
-  const setData = async () => {
-    const surveyPair = ["@surveyCount", "0"]
-    const feedPair = ["@feedCount", "0"]
-    const postPair = ["@postCount", "0"]
-    const profilePair = ["@profileCount", "0"]
-
-    await AsyncStorage.multiSet([surveyPair, feedPair, postPair, profilePair])
-
-
-  console.log("Storage init 0.")
-  }
 
   //Button Incrementations
   const incrementSurvey = async () => {
@@ -340,25 +359,8 @@ function MyStack () {
     await AsyncStorage.setItem('@profileCount', (profileCounter + 1).toString());
     setProfileCounter(profileCounter + 1);
   }
-  
-  //User info functions
-  const storeUserData = async (user) => {
-    await AsyncStorage.setItem('@userData', user)
-  }
 
-  const fetchUserData = async (user) => {
-    setUser (await AsyncStorage.getItem('@userData'))
-  }
-
-  /*Navigable Screens
-  const LoginScreen = () => {
-    return (
-      Login() //this is normally Login(), but switched to Root to ignore logging in every time during testing
-    );
-  };
-  */
-  
-
+//Homescreen
   const HomeScreen = ({navigation}) => {
     
 
@@ -369,24 +371,16 @@ function MyStack () {
     return (
       <View style = {styles.container}>
         <View style = {styles.buttonContainer}>
-          <Button
-            style={styles.button}
-            title="Survey"
-            onPress = { () => {navigation.navigate('Survey'); incrementSurvey();setUser(true)}}/>
+          <TouchableOpacity
+            style={styles.graphButton}
+            onPress = { () => {navigation.navigate('Survey'); incrementSurvey();setUser(true)}}><Text>Survey</Text></TouchableOpacity>
             </View>
             <View style = {styles.buttonContainer}>
-          <Button
-          style={styles.button}
-          title="Send clicks to DB"
-          onPress={insertClick}/>
+          <TouchableOpacity
+          style={styles.graphButton}
+          onPress={insertClick}><Text>Send clicks to database</Text></TouchableOpacity>
           </View>
           <View>
-            <TextInput
-              style = {styles.input}
-              placeholder={"Username"}
-              placeholderTextColor={"#000000"}
-              onChangeText={newText => global.postUser = newText}
-              />
             <TextInput
               style = {styles.input}
               placeholder={"Subject"}
@@ -399,11 +393,10 @@ function MyStack () {
               placeholderTextColor={"#000000"}
               onChangeText={newText => global.postBody = newText}
               />
-            <Button
-              style={styles.button}
-              title="Post"
+            <TouchableOpacity
+              style={styles.graphButton}
               onPress={ () => {insertPost()}}
-            />
+            ><Text>Post</Text></TouchableOpacity>
           </View>
         <View style = {styles.container}>
           <Text>{user}</Text>
@@ -412,6 +405,7 @@ function MyStack () {
     );
   };
 
+//Funny guy screen
   const PeterScreen = ({navigation}) => {
     return (
       <View style={styles.container}>
@@ -426,6 +420,7 @@ function MyStack () {
     );
   };
 
+//Funny guy screen
   const HomerScreen = ({navigation}) => {
     return (
       <View style={styles.container}>
@@ -439,6 +434,7 @@ function MyStack () {
     );
   };
 
+//Funny guy screen
   const RogerScreen = ({navigation}) => {
     return (
       <View style={styles.container}>
@@ -452,6 +448,7 @@ function MyStack () {
     );
   };
 
+//Funny guy screen
   const StewieScreen = ({navigation}) => {
     return (
       <View style={styles.container}>
@@ -465,10 +462,30 @@ function MyStack () {
     );
   };
 
+//Screen for our graph
+  const GraphScreen = ({navigation}) => {
+    return (
+      <View style={styles.container}>
+        <BarChart
+          data={data}
+          width={350}
+          height={220}
+          yAxisLabel=""
+          chartConfig={chartConfig}
+          verticalLabelRotation={0}
+          label
+          style={styles.graph}/>
+          <TouchableOpacity onPress={() => 
+                  {GetGraphData()}} style={styles.graphButton}><Text>Refresh Graph</Text></TouchableOpacity>
+      </View>
+    )
+  }
+
+//Screen for our signup page
   const SignupScreen = ({navigation}) => {
 
-    const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [username, setUsername] = useState('');
 
     return (
       <>
@@ -488,12 +505,13 @@ function MyStack () {
             placeholderTextColor="#000"
             onChangeText={(password) => setPassword(password)} />
       </View>
-      <TouchableOpacity onPress={() => insertData(username, password)}><Text>Sign up</Text></TouchableOpacity>
+      <TouchableOpacity onPress={() => insertData(global.username, password)}><Text>Sign up</Text></TouchableOpacity>
       </View>
     </>
     )
   }
 
+//Screen for the forgot password page **HAS YET TO BE IMPLEMENTED**
   const ForgotScreen = ({navigation}) => {
     return(
       <>
@@ -504,7 +522,7 @@ function MyStack () {
     )
   }
 
-  const FeedScreen = ({navigation}) => {
+  const FunnyGuys = ({navigation}) => {
 
     const Col = ({ numRows, children }) => {
       return  (
@@ -569,18 +587,41 @@ function MyStack () {
     );
   };
 
-  const ProfileScreen = ({navigation}) => {
+//Screen for rendering all the posts that the current user has submitted in the database
+  const ProfileScreen = ({}) => {
     return (
       <View style={styles.container}>
-      <Text>Profile here</Text>
-      <Text>Survey Clicks: {surveyCounter}</Text>
-      <Text>Post Clicks: {postCounter}</Text>
-      <Text>Feed Clicks: {feedCounter}</Text>
-      <Text>Profile Clicks: {profileCounter}</Text>
+      <Text style={styles.header}>Welcome {global.username}! Below are your recent posts.</Text>
+      <FlatList
+        style={styles.flatlist} 
+        data={posts}
+        ItemSeparatorComponent={listViewItemSeparator}
+        keyExtractor={item=>item.ID}
+        renderItem={renderItem}
+        />
+      <TouchableOpacity onPress={() => getUserPosts(global.username)}><Text>Refresh</Text></TouchableOpacity>
       </View>
     );
   };
 
+//Screen for rendering all posts by ALL users
+  const FeedScreen = () => {
+    return (
+      <View style={styles.container}>
+        <TouchableOpacity onPress={() => getAllPosts()}><Text>Refresh</Text></TouchableOpacity>
+        <FlatList
+          style={styles.flatlist}
+          data={reversedData}
+          ItemSeparatorComponent={listViewItemSeparator}
+          keyExtractor={item=>item.ID}
+          renderItem={renderItem}
+          reverse={true}
+          />
+      </View>
+    )
+  }
+
+//Main navigator
   function Root() {
     
       return (
@@ -588,15 +629,15 @@ function MyStack () {
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
 
-
-            return <Ionicons name="md-home" size={24}/>;
+            return <Text></Text>
 
           },
           tabBarActiveTintColor: 'tomato',
           tabBarInactiveTintColor: 'gray',
+          tabBarLabelStyle: {marginBottom: 15, fontSize: 14, marginRight: 2, fontWeight: "bold", color: "#d42e22"}
           
         })}>
-          <Tab.Screen name="Post" component={HomeScreen}  listeners={() => ({
+          <Tab.Screen name="Post" component={HomeScreen} listeners={() => ({
     tabPress: e => {
       
           incrementClips(); setUser(true)
@@ -610,6 +651,13 @@ function MyStack () {
       
     },
   })}/>
+          <Tab.Screen name="Funny" component={FunnyGuys} listeners={() => ({
+    tabPress: e => {
+      
+          setUser(true)
+      
+    },
+  })}/>
         <Tab.Screen name="Profile" component={ProfileScreen} listeners={() => ({
     tabPress: e => {
       
@@ -617,56 +665,39 @@ function MyStack () {
       
     },
   })}/>
+        <Tab.Screen name="Graph" component={GraphScreen}  listeners ={() => ({
+          tabPress: e => {
+
+          }
+        })}/>
         </Tab.Navigator>
       );
   };
 
   const Tab = createBottomTabNavigator();
 
+//Screen for our user survey
   const SurveyScreen = ({navigation}) => {
     return (
       <View style={styles.container}>  
         <View style={styles.buttonContainer}>  
-            <Button  
-                title="I love it!" 
-                onPress={() =>
-                  Alert.alert('Survey', 'Thank you for your feedback! We are glad you love it.', [
-                    {text: 'OK', onPress: () => console.log('LOVE Pressed')},
-                  ])
-                  
-                }   
-            />  
-        </View>  
-        <View style={styles.buttonContainer}>  
-            <Button    
-                title="It's ok."  
-                onPress={() =>
-                  Alert.alert('Survey', 'Thank you for your feedback! We are working hard to make Chirp better.', [
-                    {text: 'OK', onPress: () => console.log('OK OK Pressed')},
-                  ])
-                } 
-            />  
-        </View>  
-        <View style={styles.buttonContainer}>  
-            <Button   
-                title="It needs some work."  
-                onPress={() =>
-                  Alert.alert('Survey', 'Thank you for your feedback! We are working hard to make Chirp better.', [
-                    {text: 'OK', onPress: () => console.log('NEEDS WORK OK Pressed')},
-                  ])
-                }   
-            />  
-        </View>  
-        <View style={styles.buttonContainer}>  
-            <Button   
-                title="I hate it."  
-                onPress={() =>
-                  Alert.alert('Survey', 'Thank you for your feedback! We are working hard to make Chirp better.', [
-                    {text: 'OK', onPress: () => console.log('HATE OK Pressed')},
-                  ])
-                }    
-            />  
-        </View> 
+            <TouchableOpacity style={styles.graphButton} onPress={() => Alert.alert('Survey', 'Thank you for your feedback! We are glad you love it.',
+            [
+              {text: 'OK', onPress: () => console.log('LOVE Pressed')},
+            ])}><Text>I LOVE IT!</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.graphButton} onPress={() => Alert.alert('Survey', 'Thank you for your feedback! We are glad you think its okay.',
+            [
+              {text: 'OK', onPress: () => console.log('OK Pressed')},
+            ])}><Text>ITS OK.</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.graphButton} onPress={() => Alert.alert('Survey', 'Thank you for your feedback. We are working to make Chirp better.',
+            [
+              {text: 'OK', onPress: () => console.log('NEEDS WORK Pressed')},
+            ])}><Text>IT NEEDS SOME WORK</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.graphButton} onPress={() => Alert.alert('Survey', 'Thank you for your feedback. We are sorry you hate it. We are working to make Chirp better.',
+            [
+              {text: 'OK', onPress: () => console.log('HATE Pressed')},
+            ])}><Text>I HATE IT.</Text></TouchableOpacity>        
+        </View>      
     </View>  
     );
   };
@@ -678,6 +709,12 @@ function MyStack () {
       backgroundColor: '#fff',
       alignItems: 'center',
       justifyContent: 'center',
+      backgroundColor: "#807a7a",
+    },
+
+    graph: {
+      borderRadius: 10,
+      padding: 15,
     },
     
     signup: {
@@ -706,6 +743,10 @@ function MyStack () {
 
     },
 
+    header: {
+      fontSize: 30,
+    },
+
     inputView: {
       backgroundColor: "#d42e22",
       borderRadius: 10,
@@ -714,7 +755,6 @@ function MyStack () {
       marginBottom: 10,
       alignItems: "center",
     
-
     },
     
     TextInput: {
@@ -743,14 +783,27 @@ function MyStack () {
       padding: 5,
       backgroundColor: "#d42e22",
       borderRadius: 10,
-      width:"100%",
+      width:"110%",
       justifyContent: "center",
       alignItems: "center",
       marginBottom: 10
 
     },
 
-    
+    graphButton: {
+      backgroundColor: "#d42e22",
+      borderRadius: 10,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 10,
+      marginTop: 10,
+    },
+
+    flatlist: {
+      width: '100%',
+      padding: 10,
+    },
+
     logo: {
       justifyContent: "center",
       alignItems: "center",
@@ -758,7 +811,12 @@ function MyStack () {
       width:100,
       height: 100,
       marginTop:100,
+      borderRadius: 5,
       
+    },
+
+    tab: {
+      backgroundColor: '#373b40',
     },
 
     profilePic: {
@@ -781,24 +839,26 @@ function MyStack () {
     input: {
       height: 40,
       width: 200,
-      borderColor: 'gray',
+      borderColor: 'black',
       borderWidth: 1,
       borderRadius: 5,
-      margin: 20,
+      margin: 10,
       paddingLeft: 5,
-      height: 30
+      height: 30,
+      borderWidth: 1.3,
     },
 
     bodyInput: {
-      height: 150,
+      height: 110,
       width: 200,
-      borderColor: 'gray',
+      borderColor: 'black',
       borderWidth: 1,
       borderRadius: 5,
-      margin: 20,
+      margin: 10,
       paddingLeft: 5,
       textAlignVertical: 'top',
-      paddingVertical: 5
+      paddingVertical: 5,
+      borderWidth: 1.3,
     },
 
     app: {
@@ -827,6 +887,29 @@ function MyStack () {
     "2col":  {
       flex:  2
     },
+
+    postUser: {
+      fontSize: 24,
+      padding: 5,
+      textDecorationLine: 'underline',
+    },
+
+    postSubject: {
+      fontSize: 16,
+      padding: 5,
+    },
+
+    postBody: {
+      fontSize: 12,
+      padding: 5,
+    },
+
+    listItem: {
+      borderWidth: 3,
+      borderColor: '#d42e22',
+      borderRadius: 10,
+      padding: 10,
+    }
   }); 
 
 
@@ -835,7 +918,7 @@ function MyStack () {
   
   const LoginScreen = ({navigation}) => {
 
-      const [username, setUsername] = useState("");
+      const username = global.username;
       const [password, setPassword] = useState("");
 
       function verifyData(username, password) {
@@ -861,7 +944,7 @@ function MyStack () {
         .then((response) => response.text())
         .then((response) => {
           if (response === 'successful login.'){
-            navigation.navigate("Home")
+            navigation.navigate("Log Out")
             console.log("Login Successful")
           } else {
             Alert.alert("Incorrect Username or Password. Please try again.")
@@ -881,7 +964,7 @@ function MyStack () {
               style={styles.TextInput}
               placeholder="Username"
               placeholderTextColor="#000"
-              onChangeText={(username) => setUsername(username)} />
+              onChangeText={(username) => global.username = username} />
           </View>
 
 
@@ -905,7 +988,13 @@ function MyStack () {
           <TouchableOpacity onPress={() => verifyData(username, password)}>
             <Text style={styles.loginButton}>Login</Text> 
           </TouchableOpacity>
-
+          <Text style={{fontSize: 20, fontWeight: 'bold', marginBottom: 0, backgroundColor: "#807a7a"}}>Or, log in with Google!</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  promptAsync();
+                } }
+              ><Image source={require("./assets/btn.png")} style={{width: 72, height: 72, borderRadius: 10}}/>
+              </TouchableOpacity>
 
         </View>
 
@@ -921,4 +1010,36 @@ function MyStack () {
  )
 }
 
-//, verifyData()
+
+
+//GORILLA
+/*
+                _
+            ,.-" "-.,
+           /   ===   \
+          /  =======  \
+       __|  (o)   (0)  |__      
+      / _|    .---.    |_ \         
+     | /.----/ O O \----.\ |       
+      \/     |     |     \/        
+      |                   |            
+      |                   |           
+      |                   |          
+      _\   -.,_____,.-   /_         
+  ,.-"  "-.,_________,.-"  "-.,
+ /          |       |          \  
+|           l.     .l           | 
+|            |     |            |
+l.           |     |           .l             
+ |           l.   .l           | \,     
+ l.           |   |           .l   \,    
+  |           |   |           |      \,  
+  l.          |   |          .l        |
+   |          |   |          |         |
+   |          |---|          |         |
+   |          |   |          |         |
+   /"-.,__,.-"\   /"-.,__,.-"\"-.,_,.-"\
+  |            \ /            |         |
+  |             |             |         |
+   \__|__|__|__/ \__|__|__|__/ \_|__|__/ 
+*/
